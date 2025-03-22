@@ -1,0 +1,8 @@
+переходим в папку 
+C:\Program Files (x86)\Arduino\hardware\tools\avr\bin
+
+чтение прошивки из Nano 
+avrdude -C ..\etc\avrdude.conf -p m328p -c arduino -P COM5 -b 57600 -U flash:r:D:\turniket_328p_backup.hex:i
+
+загрузка прошивки в другую Nano 
+avrdude -C ..\etc\avrdude.conf -p m328p -c arduino -P COM5 -b 57600 -U flash:w:D:\turniket_328p_backup.hex:i

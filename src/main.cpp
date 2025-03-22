@@ -8,8 +8,8 @@
 #define _ASYNC_WEBSERVER_LOGLEVEL_ 2
 
 // Select the IP address according to your local network
-IPAddress myIP(192, 168, 10, 231);
-IPAddress myGW(192, 168, 10, 1);
+IPAddress myIP(IP_OCT1, IP_OCT2, IP_OCT3, IP_OCT4);
+IPAddress myGW(IP_OCT1, IP_OCT2, IP_OCT3, IP_GATE);
 IPAddress mySN(255, 255, 255, 0);
 // Google DNS Server IP
 IPAddress myDNS(8, 8, 8, 8);
@@ -266,7 +266,7 @@ void setup() {
     digitalWrite(ENTER_PIN, OFF);
     pinMode(EXIT_PIN, OUTPUT);
     digitalWrite(EXIT_PIN, OFF);
-    
+
     while (!Serial && millis() < 2000);
 
     Serial.print(F("\nStart AsyncSimpleServer_WT32_ETH01 on "));
@@ -297,8 +297,7 @@ void loop() {
     // sett_loop();  // wifi морда Settings Alex Gyver. не работает с ETH
     parse_serial();  // отладка
 
-    Serial1.flush();  // очистка если там что то насыпали
-    if (scanDMcode()) {
+    if (scanDMcode()) {  // если отсканирован код
         // Serial.println("отсканированный DM: " + String(dm_number));
         byte customer_count = valid_customer();  // если
         if (customer_count) {
@@ -307,17 +306,17 @@ void loop() {
                 digitalWrite(ENTER_PIN, ON);
                 delay(FIRST_ENTER_DELAY);
                 digitalWrite(ENTER_PIN, OFF);
-            } else if (customer_count == 2){
-                Serial.println("\t1-й ВЫход ");  
+            } else if (customer_count == 2) {
+                Serial.println("\t1-й ВЫход ");
                 digitalWrite(EXIT_PIN, ON);
                 delay(FIRST_EXIT_DELAY);
                 digitalWrite(EXIT_PIN, OFF);
-            } else if (customer_count % 2 == 1){
+            } else if (customer_count % 2 == 1) {
                 Serial.println("\t\tснова вхоДит ");
                 digitalWrite(ENTER_PIN, ON);
                 delay(MULTIPLE_OPEN_DELAY);
                 digitalWrite(ENTER_PIN, OFF);
-            } else if (customer_count % 2 == 0){
+            } else if (customer_count % 2 == 0) {
                 Serial.println("\t\t\tснова ВЫходит ");
                 digitalWrite(EXIT_PIN, ON);
                 delay(MULTIPLE_OPEN_DELAY);
@@ -326,6 +325,10 @@ void loop() {
         } else {
             Serial.print("НЕ валидный посетитель");
         }
-    }
+        // очистим возможные повторные данные от сканера
+        while (Serial1.available()) {
+            Serial1.read();
+        }
+    }  // scanDMcode()
 
 }  // loop
