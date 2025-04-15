@@ -21,6 +21,25 @@ String stringEthIp = String(myIP[2]) + "." + String(myIP[3]);
 #include <ArduinoJson.h>
 #include <AsyncTCP.h>
 #include <AsyncWebServer_WT32_ETH01.h>
+
+#define _ASYNC_WEBSERVER_LOGLEVEL_ 2
+
+#ifdef HTTP_CLIENT
+// Level from 0-4
+#define ASYNC_HTTP_DEBUG_PORT Serial
+#define _ASYNC_HTTP_LOGLEVEL_ 1
+
+// #include <WebServer_WT32_ETH01.h>               // https://github.com/khoih-prog/WebServer_WT32_ETH01
+#define ASYNC_HTTP_REQUEST_ESP32_ETHERNET_VERSION_MIN_TARGET "AsyncHTTPRequest_ESP32_Ethernet v1.14.0"
+#define ASYNC_HTTP_REQUEST_ESP32_ETHERNET_VERSION_MIN 1014000
+// Uncomment for certain HTTP site to optimize
+// #define NOT_SEND_HEADER_AFTER_CONNECTED        true
+
+// To be included only in main(), .ino with setup() to avoid `Multiple Definitions` Linker Error
+#include <AsyncHTTPRequest_ESP32_Ethernet.h>  // https://github.com/khoih-prog/AsyncHTTPRequest_ESP32_Ethernet
+AsyncHTTPRequest request;
+#endif
+
 #define DATABASE_SIZE 1000
 long database[DATABASE_SIZE];  // база со всеми DM кодами
 byte quantity[DATABASE_SIZE];  // база с количеством посещений
@@ -33,7 +52,7 @@ long dm_number = 1000000000;  // Переменная для считанног�
 // https://github.com/khoih-prog/AsyncWebServer_WT32_ETH01/blob/main/examples/AsyncMultiWebServer_WT32_ETH01/AsyncMultiWebServer_WT32_ETH01.ino
 
 // пример POST запроса
-// curl -X POST -H 'Content-Type: application/json' -d '{"FirstName":"Joe","LastName":"Soap"}' http://192.168.10.231/post
+// curl -X POST -H 'Content-Type: application/json' -d '{"FirstName":"Joe","LastName":"Soap"}' http://192.168.10.231/api
 
 AsyncWebServer ETHserver(80);
 // const char* PARAM_MESSAGE = "message";
@@ -264,9 +283,8 @@ void setup() {
 
     pinMode(ENTER_PIN, OUTPUT);
     digitalWrite(ENTER_PIN, OFF);
-    pinMode(EXIT_PIN, OUTPUT);
-    digitalWrite(EXIT_PIN, OFF);
-
+    pinMode(2, OUTPUT);
+    digitalWrite(2, OFF);
     while (!Serial && millis() < 2000);
 
     Serial.print(F("\nStart AsyncSimpleServer_WT32_ETH01 on "));
@@ -283,7 +301,7 @@ void setup() {
     Serial.println(localEthIP);
 
     ETHserver.on("/", HTTP_GET, [](AsyncWebServerRequest* request) { handleEthRoot(request); });
-    ETHserver.on("/post", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, handlePostBody);
+    ETHserver.on("/api", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, handlePostBody);
     ETHserver.onNotFound([](AsyncWebServerRequest* request) { handleEthnotFound(request); });
     ETHserver.begin();
 
@@ -308,9 +326,15 @@ void loop() {
                 digitalWrite(ENTER_PIN, OFF);
             } else if (customer_count == 2) {
                 Serial.println("\t1-й ВЫход ");
+#ifdef EXIT_PIN
                 digitalWrite(EXIT_PIN, ON);
                 delay(FIRST_EXIT_DELAY);
                 digitalWrite(EXIT_PIN, OFF);
+#else
+                digitalWrite(ENTER_PIN, ON);
+                delay(FIRST_EXIT_DELAY);
+                digitalWrite(ENTER_PIN, OFF);
+#endif
             } else if (customer_count % 2 == 1) {
                 Serial.println("\t\tснова вхоДит ");
                 digitalWrite(ENTER_PIN, ON);
@@ -318,9 +342,15 @@ void loop() {
                 digitalWrite(ENTER_PIN, OFF);
             } else if (customer_count % 2 == 0) {
                 Serial.println("\t\t\tснова ВЫходит ");
+#ifdef EXIT_PIN
                 digitalWrite(EXIT_PIN, ON);
                 delay(MULTIPLE_OPEN_DELAY);
                 digitalWrite(EXIT_PIN, OFF);
+#else
+                digitalWrite(ENTER_PIN, ON);
+                delay(MULTIPLE_OPEN_DELAY);
+                digitalWrite(ENTER_PIN, OFF);
+#endif
             }
         } else {
             Serial.print("НЕ валидный посетитель");
