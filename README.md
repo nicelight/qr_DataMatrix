@@ -24,8 +24,8 @@
 ### 1. Клонируйте репозиторий
 
 ```sh
-git clone https://github.com/yourname/yourproject.git
-cd yourproject
+git clone https://github.com/nicelight/qr_DataMatrix.git
+cd qr_DataMatrix
 ```
 
 ### 2. Установите [PlatformIO](https://platformio.org/) (если ещё не установлен)
@@ -54,7 +54,7 @@ cd yourproject
 #define SERVER_OCT1 192
 #define SERVER_OCT2 168
 #define SERVER_OCT3 50
-#define SERVER_OCT4 100
+#define SERVER_OCT4 50
 ```
 
 ---
@@ -92,7 +92,7 @@ build_src_filter = +<main_as_a_server_v0.1_stable.cpp> +<nastroyki.h> +<led.h> +
    ```sh
    pio run -t upload
    ```
-   или используйте кнопку "Upload" в PlatformIO IDE.
+   или используйте кнопку "Upload" в PlatformIO IDE или комбинация клавиш Ctrl + Alt + U
 
 ---
 
