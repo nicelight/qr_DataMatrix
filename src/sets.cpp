@@ -5,18 +5,18 @@
 #include <LittleFS.h>
 #include <WiFiConnector.h>
 
-LED indikator(INDIKATOR, 300, 3, 50, 20);  // каждые 1000 милисек мигаем 3
+// LED indikator(INDIKATOR, 300, 3, 50, 20);  // каждые 1000 милисек мигаем 3
 
 GyverDBFile db(&LittleFS, "/data.db");
 // SettingsGyver sett(PROJECT_NAME, &db);
 SettingsGyverWS sett(PROJECT_NAME, &db);
-static bool notice_f;  // флаг на отправку уведомления о подключении к wifi
-bool gotWifi = false;  // если произошел момент подключения к сети
+static bool notice_f; // флаг на отправку уведомления о подключении к wifi
+bool gotWifi = false; // если произошел момент подключения к сети
 uint32_t checkWifiMs = 0, curSecMs = 0;
 
-Datime curDataTime(NTP);  // NTP это объект
+Datime curDataTime(NTP); // NTP это объект
 
-static const char* const WEEKdays[] = {
+static const char *const WEEKdays[] = {
     "вчера",
     "Понедельник",
     "Вторник",
@@ -32,18 +32,20 @@ Data data;
 sets::Logger logger(150);
 
 // ========== build ==========
-static void build(sets::Builder& b) {
+static void build(sets::Builder &b)
+{
     // WEB интерфейс ВЕБ морда формируется здесь
     {
         sets::Group g(b, "Nicelight");
-        if (NTP.online()) {
+        if (NTP.online())
+        {
             {
                 sets::Row g(b);
                 // b.DateTime(kk::datime, "Сегодня ");
-                b.Label(kk::dayofweek, "Сегодня");  // текущая дата
-                b.Label(kk::datime, " ");           // текущая дата
+                b.Label(kk::dayofweek, "Сегодня"); // текущая дата
+                b.Label(kk::datime, " ");          // текущая дата
             }
-        }  // NTP.online()
+        } // NTP.online()
 
         // {
         //     sets::Row g(b);
@@ -53,7 +55,7 @@ static void build(sets::Builder& b) {
         // }
 
         b.Time(kk::secondsNow, "Времечко");
-    }  // Nicelight
+    } // Nicelight
 
     // {  // удалить если работает wifi. это было в исходном примере ard_pio
     //     sets::Group g(b, "Настройки WiFi");
@@ -77,36 +79,39 @@ static void build(sets::Builder& b) {
             {
                 sets::Menu m2(b, "Интерфейс");
                 b.Label("если надо - добавим тут");
-            }  // настройки - интерфейс
+            } // настройки - интерфейс
             {
                 sets::Menu m3(b, "Wifi");
                 // провалились в расширенные пристройки {
                 sets::Group m4(b, "Настройки WiFi");
                 b.Input(kk::wifi_ssid, "Wifi сеть");
                 b.Pass(kk::wifi_pass, "Пароль", "");
-                if (b.Switch(kk::close_ap, "Закрывать точку доступа")) {
+                if (b.Switch(kk::close_ap, "Закрывать точку доступа"))
+                {
                     WiFiConnector.closeAP(db[kk::close_ap]);
                 }
-                if (b.Button("Подключить")) {
-                    db.update();      //  в примере WiFiconnector было, а в примере ard_pio не было
-                    notice_f = true;  // пользователю попап уведомление
+                if (b.Button("Подключить"))
+                {
+                    db.update();     //  в примере WiFiconnector было, а в примере ard_pio не было
+                    notice_f = true; // пользователю попап уведомление
                     WiFiConnector.connect(db[kk::wifi_ssid], db[kk::wifi_pass]);
                 }
-            }  // настройки wifi
+            } // настройки wifi
             b.Input(kk::ntp_gmt, "Часовой пояс");
             b.Label(" ", "\n\n ");
 
-            if (b.Button(kk::btn2, "стереть настройки(TODO!)", sets::Colors::Red)) {
+            if (b.Button(kk::btn2, "стереть настройки(TODO!)", sets::Colors::Red))
+            {
                 Serial.println("could clear db");
                 // db.clear();
                 // db.update();
             }
-        }  // настройки - расширенные
-    }  // Подстройки
+        } // настройки - расширенные
+    } // Подстройки
     b.Label(H(testLabel), "тест:");
-}  // build
+} // build
 
-/// TODO переделать на веб сокеты 
+/// TODO переделать на веб сокеты
 // ========== update =========
 // static void update(sets::Updater& u) {
 //     if (notice_f)  // уведомление при вводе wifi данных
@@ -131,7 +136,8 @@ static void build(sets::Builder& b) {
 // }  // update
 
 // ========== begin ==========
-void sett_begin() {
+void sett_begin()
+{
     // fs
 #ifdef ESP32
     LittleFS.begin(true);
@@ -147,15 +153,17 @@ void sett_begin() {
     db.init(kk::ntp_gmt, 5);
 
     // wifi
-    WiFiConnector.onConnect([]() {
-        Serial.print("Connected: ");
-        Serial.println(WiFi.localIP());
-        indikator.setPeriod(3000, 1, 200, 150);  // раз в 3000 сек, 1 раз
-    });
-    WiFiConnector.onError([]() {
+    WiFiConnector.onConnect([]()
+                            {
+                                Serial.print("Connected: ");
+                                Serial.println(WiFi.localIP());
+                                // indikator.setPeriod(3000, 1, 200, 150);  // раз в 3000 сек, 1 раз
+                            });
+    WiFiConnector.onError([]()
+                          {
         Serial.print("Error. Start AP: ");
         Serial.println(WiFi.softAPIP());
-        indikator.setPeriod(600, 2, 100, 50);  // раз в  секунду два раза взмигнем - по 200 милисек, гореть будем 50 милисек
+        // indikator.setPeriod(600, 2, 100, 50);  // раз в  секунду два раза взмигнем - по 200 милисек, гореть будем 50 милисек
         // if (each5min.ready()) ESP.restart();  // через 5 минут ребутаемся
         NTP.begin();
         NTP.setHost("1.asia.pool.ntp.oronUpdateg");     // установить другой хост
@@ -164,8 +172,7 @@ void sett_begin() {
         NTP.setPeriod(600);  // обновлять раз в 600 сек        
         NTP.setGMT(db[kk::ntp_gmt]);
         NTP.updateNow();  // синхронизировать
-        NTP.tick();
-    });
+        NTP.tick(); });
 
     WiFiConnector.setName(PROJECT_NAME);
     WiFiConnector.closeAP(db[kk::close_ap]);
@@ -178,56 +185,72 @@ void sett_begin() {
 }
 
 // ========== loop ==========
-void sett_loop() {
+void sett_loop()
+{
     WiFiConnector.tick();
     // проверка связи с вайфаем
-    if (WiFiConnector.connected()) {
-        if (!gotWifi) indikator.setPeriod(3000, 1, 200, 150);  // спокойное мигание после реконнекта к wifi
+    if (WiFiConnector.connected())
+    {
+        if (!gotWifi)
+        {
+            // indikator.setPeriod(3000, 1, 200, 150); // спокойное мигание после реконнекта к wifi
+        }
         gotWifi = true;
         checkWifiMs = millis();
-    } else {
-        if (gotWifi) {
-            gotWifi = false;  // для запуска частой мигалки
+    }
+    else
+    {
+        if (gotWifi)
+        {
+            gotWifi = false; // для запуска частой мигалки
             // общее время, кол-во, период одного, один зажжен на.
-            indikator.setPeriod(1000, 10, 100, 70);  // часто мигаем
+            // indikator.setPeriod(1000, 10, 100, 70); // часто мигаем
         }
-        if ((millis() - checkWifiMs) > 300000ul) {  // через 5 минут оффлайна
-            for (int i = 0; i < 20; i++) {
-                digitalWrite(INDIKATOR, 1);
-                delay(70);
-                digitalWrite(INDIKATOR, 0);
-                delay(70);
+        if ((millis() - checkWifiMs) > 300000ul)
+        { // через 5 минут оффлайна
+            for (int i = 0; i < 20; i++)
+            {
+                // digitalWrite(INDIKATOR, 1);
+                // delay(70);
+                // digitalWrite(INDIKATOR, 0);
+                // delay(70);
             }
             ESP.restart();
         }
-    }  // WiFi.connected()
+    } // WiFi.connected()
 
     sett.tick();
 
-    // обновление в веб морде 
+    // обновление в веб морде
     static uint32_t tmr;
-    if (millis() - tmr >= 300) {
+    if (millis() - tmr >= 300)
+    {
         tmr = millis();
         // отправить апдейт прямо сейчас
         sett.updater().update(H(testLabel), random(100));
-    }//if ms
+    } // if ms
 
-    indikator.tick();
+    // indikator.tick();
     NTP.tick();
 
     // тикаем временем каждую секунду,
     //  TODO переделать чтобы NTP нормально секунды отдавало... не знаю как
-    if (millis() - curSecMs >= 1000) {  // раз в 1 сек
+    if (millis() - curSecMs >= 1000)
+    { // раз в 1 сек
         curSecMs = millis();
-        if (NTP.online()) {
+        if (NTP.online())
+        {
             data.secondsNow = NTP.daySeconds();
             curDataTime = NTP.getUnix();
-        } else data.secondsNow++;  // инкермент реалтайм
+        }
+        else
+            data.secondsNow++; // инкермент реалтайм
 
-        data.secondsUptime++;               // инкермент аптайм
-        if (data.secondsUptime == 86399) {  // инкремент дней аптайма
+        data.secondsUptime++; // инкермент аптайм
+        if (data.secondsUptime == 86399)
+        { // инкремент дней аптайма
             data.secondsUptime = 0;
             data.uptime_Days++;
         }
-    }  // each ms
+    } // each ms
 }

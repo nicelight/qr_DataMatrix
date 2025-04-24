@@ -1,9 +1,7 @@
 #pragma once
-
-
+#include "nastroyki.h"
 #include "led.h"
 #include "timer.h"
-#include "nastroyki.h"
 
 // #define PROJECT_NAME "Turniket-v0.1"
 // #define PROJECT_NAME "Турникеты v0.1"

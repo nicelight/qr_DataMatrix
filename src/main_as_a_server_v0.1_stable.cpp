@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #include "led.h"
-#include "nastroyki.h"
+// #include "nastroyki.h"
 #include "sets.h"
 #include "timer.h"
 
@@ -21,6 +21,7 @@ String stringEthIp = String(myIP[2]) + "." + String(myIP[3]);
 #include <ArduinoJson.h>
 #include <AsyncTCP.h>
 #include <AsyncWebServer_WT32_ETH01.h>
+// #include <WebServer_WT32_ETH01.h> 
 
 #define _ASYNC_WEBSERVER_LOGLEVEL_ 2
 
@@ -36,17 +37,17 @@ String stringEthIp = String(myIP[2]) + "." + String(myIP[3]);
 // #define NOT_SEND_HEADER_AFTER_CONNECTED        true
 
 // To be included only in main(), .ino with setup() to avoid `Multiple Definitions` Linker Error
-#include <AsyncHTTPRequest_ESP32_Ethernet.h>  // https://github.com/khoih-prog/AsyncHTTPRequest_ESP32_Ethernet
+#include <AsyncHTTPRequest_ESP32_Ethernet.h> // https://github.com/khoih-prog/AsyncHTTPRequest_ESP32_Ethernet
 AsyncHTTPRequest request;
 #endif
 
 #define DATABASE_SIZE 1000
-long database[DATABASE_SIZE];  // база со всеми DM кодами
-byte quantity[DATABASE_SIZE];  // база с количеством посещений
+long database[DATABASE_SIZE]; // база со всеми DM кодами
+byte quantity[DATABASE_SIZE]; // база с количеством посещений
 
-int currentIndex = 1;         // текущий индекс в базе
-String dm_string = "";        // Переменная для хранения считанной сканером строки
-long dm_number = 1000000000;  // Переменная для считанного полезного DM кода из строки , будет сравниваться с базой. Дефолт за пределами 9 знаков
+int currentIndex = 1;        // текущий индекс в базе
+String dm_string = "";       // Переменная для хранения считанной сканером строки
+long dm_number = 1000000000; // Переменная для считанного полезного DM кода из строки , будет сравниваться с базой. Дефолт за пределами 9 знаков
 
 // для мультисерверности
 // https://github.com/khoih-prog/AsyncWebServer_WT32_ETH01/blob/main/examples/AsyncMultiWebServer_WT32_ETH01/AsyncMultiWebServer_WT32_ETH01.ino
@@ -57,17 +58,21 @@ long dm_number = 1000000000;  // Переменная для считанног�
 AsyncWebServer ETHserver(80);
 // const char* PARAM_MESSAGE = "message";
 
-bool scanDMcode() {
-    if (Serial1.available() > 0) {
+bool scanDMcode()
+{
+    if (Serial1.available() > 0)
+    {
         Serial.println("Serial1 avaliable");
-        dm_string = "";  // Очищаем строку перед новым чтением
+        dm_string = ""; // Очищаем строку перед новым чтением
         // Читаем данные, пока поступают символы. Если 100(50) мс без новых данных, считаем, что пакет завершился.
         uint32_t startTime = millis();
-        while (millis() - startTime < 100ul) {
-            while (Serial1.available() > 0) {
+        while (millis() - startTime < 100ul)
+        {
+            while (Serial1.available() > 0)
+            {
                 char c = Serial1.read();
                 dm_string += c;
-                startTime = millis();  // Сброс таймера при поступлении нового символа
+                startTime = millis(); // Сброс таймера при поступлении нового символа
             }
         }
         // Обрезаем строку от лишних пробелов и управляющих символов
@@ -76,7 +81,8 @@ bool scanDMcode() {
         Serial.print("Получена строка: ");
         Serial.println(dm_string);
         // Проверка: строка должна быть не менее 33 символов для извлечения индексов 23-32
-        if (dm_string.length() >= 32) {
+        if (dm_string.length() >= 32)
+        {
             // Извлечение подстроки с символами с 23-го по 32-й индекс (10 символов)
             String sub_str = dm_string.substring(23, 32);
             Serial.print("Извлечённая подстрока: ");
@@ -84,8 +90,10 @@ bool scanDMcode() {
 
             // Проверка, что все символы подстроки являются цифрами
             bool valid = true;
-            for (int i = 0; i < sub_str.length(); i++) {
-                if (!isDigit(sub_str.charAt(i))) {
+            for (int i = 0; i < sub_str.length(); i++)
+            {
+                if (!isDigit(sub_str.charAt(i)))
+                {
                     valid = false;
                     Serial.println("ERR: в DM коде не только цифры");
                     return 0;
@@ -96,93 +104,116 @@ bool scanDMcode() {
             Serial.print("Преобразованное число: ");
             Serial.println(dm_number);
             return 1;
-        } else {
+        }
+        else
+        {
             Serial.println("Ошибка: полученная строка слишком короткая.");
         }
     }
-    dm_number = 1000000000;  // сброс результата скана
+    dm_number = 1000000000; // сброс результата скана
     return 0;
-}  // scanDMcode()
+} // scanDMcode()
 
-byte handleJSON(String& body) {
+byte handleJSON(String &body)
+{
     // Serial.print("POST body: ");
     // Serial.println(body);
     StaticJsonDocument<2048> doc;
     DeserializationError error = deserializeJson(doc, body);
-    if (error) {
-        Serial.print("JSON parse error: ");  //"Invalid JSON"
+    if (error)
+    {
+        Serial.print("JSON parse error: "); //"Invalid JSON"
         Serial.println(error.c_str());
         return 4;
     }
 
-    const char* action = doc["action"];
-    if (action == nullptr) {
+    const char *action = doc["action"];
+    if (action == nullptr)
+    {
         Serial.println("JSON: Ключ 'action' не найден или содержит некорректное значение.");
         return 4;
     }
-    if (strcmp(action, "add") == 0) {
-        if (!doc.containsKey("data")) {
+    if (strcmp(action, "add") == 0)
+    {
+        if (!doc.containsKey("data"))
+        {
             Serial.println("JSON: Отсутствует поле 'data'");
             return 4;
         }
-        if (!doc["data"].is<JsonArray>()) {
+        if (!doc["data"].is<JsonArray>())
+        {
             Serial.println("JSON: Поле 'data' не является массивом");
             return 4;
         }
         JsonArray data = doc["data"].as<JsonArray>();
         // Проверка, что массив 'data' не пуст
-        if (data.size() == 0) {
-            Serial.println("JSON: Массив 'data' пуст.");  // 400
+        if (data.size() == 0)
+        {
+            Serial.println("JSON: Массив 'data' пуст."); // 400
             return 4;
         }
-        for (JsonVariant v : data) {
+        for (JsonVariant v : data)
+        {
             String code = v.as<String>();
             // Проверка длины кода
             // Serial.print("code.length() ");
             // Serial.println(code.length());
-            if (code.length() != 32) {
-                Serial.println("JSON: Неверная длина DM кода: " + code);  // 400
+            if (code.length() != 32)
+            {
+                Serial.println("JSON: Неверная длина DM кода: " + code); // 400
                 return 4;
             }
             // Извлечение подстроки: символы с позиций 23..32 (1-индексация) => [24,33) в 0-индексации
             String subStr = code.substring(23, 32);
             long value = subStr.toInt();
-            if (currentIndex < DATABASE_SIZE) {
+            if (currentIndex < DATABASE_SIZE)
+            {
                 bool found = false;
-                for (int i = 0; i < currentIndex; i++) {
-                    if (database[i] == value) {
+                for (int i = 0; i < currentIndex; i++)
+                {
+                    if (database[i] == value)
+                    {
                         Serial.print("JSON:  DM: " + String(value));
                         Serial.println(" уже в базе. Индекс" + String(i));
                         found = true;
                         break;
                     }
                 }
-                if (!found) {
+                if (!found)
+                {
                     database[currentIndex++] = value;
                     Serial.println("JSON: В базу добавлен DM: " + String(value));
                     Serial.println(", index: " + String(currentIndex));
                 }
-            } else {
-                Serial.println("JSON: База заполнена. Не могу добавить: " + String(value));  // 507
+            }
+            else
+            {
+                Serial.println("JSON: База заполнена. Не могу добавить: " + String(value)); // 507
                 return 5;
             }
         }
-    } else if (strcmp(action, "delete") == 0) {
+    }
+    else if (strcmp(action, "delete") == 0)
+    {
         JsonArray data = doc["data"].as<JsonArray>();
-        for (JsonVariant v : data) {
+        for (JsonVariant v : data)
+        {
             String code = v.as<String>();
             // Проверка длины кода
             // Serial.print("code.length() ");
             // Serial.println(code.length());
-            if (code.length() != 32) {
-                Serial.println("JSON: Неверная длина DM кода: " + code);  // 400
+            if (code.length() != 32)
+            {
+                Serial.println("JSON: Неверная длина DM кода: " + code); // 400
                 return 4;
             }
             String subStr = code.substring(23, 32);
             long value = subStr.toInt();
             bool found = false;
-            for (int i = 0; i < currentIndex; i++) {
-                if (database[i] == value) {
+            for (int i = 0; i < currentIndex; i++)
+            {
+                if (database[i] == value)
+                {
                     database[i] = 0;
                     Serial.print("Удален DM: " + String(value));
                     Serial.println(", index: " + String(i));
@@ -190,40 +221,50 @@ byte handleJSON(String& body) {
                     break;
                 }
             }
-            if (!found) {
+            if (!found)
+            {
                 Serial.println("Для удаления не найдена: " + String(value));
                 // return 4;
             }
         }
-    } else if (strcmp(action, "removeall") == 0) {
-        for (int i = 0; i < currentIndex; i++) {
+    }
+    else if (strcmp(action, "removeall") == 0)
+    {
+        for (int i = 0; i < currentIndex; i++)
+        {
             database[i] = 0;
             quantity[i] = 0;
         }
         currentIndex = 0;
         Serial.println("Все элементы в базе обнулены.");
-    } else {
-        Serial.println("Неизвестное действие: " + String(action));  // 400
+    }
+    else
+    {
+        Serial.println("Неизвестное действие: " + String(action)); // 400
         return 4;
     }
     // server.send(200, "text/plain", "OK");
     return 2;
-}  // handleJSON
+} // handleJSON
 
-void handlePostBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+void handlePostBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+{
     static String body = "";
     // Если индекс равен нулю, начинаем заново
-    if (index == 0) {
+    if (index == 0)
+    {
         body = "";
     }
     // Добавляем полученные данные
-    for (size_t i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++)
+    {
         body += (char)data[i];
     }
     // Если получены все данные, парсим их
-    if (index + len >= total) {
+    if (index + len >= total)
+    {
         byte result;
-        result = handleJSON(body);  // обработка JSON
+        result = handleJSON(body); // обработка JSON
         if (result == 2)
             request->send(200, "text/plain", "\tGOT POST with BODY:\n" + body);
         else if (result == 4)
@@ -231,52 +272,65 @@ void handlePostBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, s
         else if (result == 5)
             request->send(507, "text/plain", "Database is full, cant save:\n" + body);
     }
-}  // handlePostBody
+} // handlePostBody
 
-void handleEthRoot(AsyncWebServerRequest* request) {
+void handleEthRoot(AsyncWebServerRequest *request)
+{
     request->send(200, F("text/html"), "root page from separet func");
 }
 
-void handleEthnotFound(AsyncWebServerRequest* request) {
+void handleEthnotFound(AsyncWebServerRequest *request)
+{
     request->send(404, "text/plain", "\n\n \t\t @smartfarm_diy \n\n\n\t\t\t\t\t No such page. 404");
 }
 
-void parse_serial() {
-    if (Serial.available() > 0) {
+void parse_serial()
+{
+    if (Serial.available() > 0)
+    {
         char receivedChar = Serial.read();
-        if (receivedChar == 'd') {
+        if (receivedChar == 'd')
+        {
             Serial.print("аптайм: ");
             Serial.println(millis() >> 10);
-            for (int i = 0; i < currentIndex; i++) {
+            for (int i = 0; i < currentIndex; i++)
+            {
                 Serial.print(i);
                 Serial.print(":\t\t");
                 Serial.println(database[i]);
             }
-        } else if (receivedChar == 'i') {
+        }
+        else if (receivedChar == 'i')
+        {
             Serial.print("аптайм: ");
             Serial.println(millis() >> 10);
             Serial.print("текущий индекс:");
             Serial.println(currentIndex);
         }
     }
-}  // parse_serial()
+} // parse_serial()
 
-byte valid_customer() {
+byte valid_customer()
+{
     // начинаем с единицы, т.к. нулевой элемент в базе зарезервирован под сервисный браслет
-    for (int i = 1; i < currentIndex; i++) {
-        if (database[i] == dm_number) {
-            return ++quantity[i];  // количество посещений
+    for (int i = 1; i < currentIndex; i++)
+    {
+        if (database[i] == dm_number)
+        {
+            return ++quantity[i]; // количество посещений
         }
     }
     return 0;
-}  // valid_customer()
+} // valid_customer()
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
     Serial.println();
     Serial1.begin(9600, SERIAL_8N1, RX_SCANER, TX_SCANER);
 
-    for (int i = 0; i < DATABASE_SIZE; i++) {
+    for (int i = 0; i < DATABASE_SIZE; i++)
+    {
         database[i] = 0;
         quantity[i] = 0;
     }
@@ -285,14 +339,15 @@ void setup() {
     digitalWrite(ENTER_PIN, OFF);
     pinMode(2, OUTPUT);
     digitalWrite(2, OFF);
-    while (!Serial && millis() < 2000);
+    while (!Serial && millis() < 2000)
+        ;
 
     Serial.print(F("\nStart AsyncSimpleServer_WT32_ETH01 on "));
     Serial.print(BOARD_NAME);
     Serial.print(F(" with "));
     Serial.println(SHIELD_TYPE);
     Serial.println(ASYNC_WEBSERVER_WT32_ETH01_VERSION);
-    WT32_ETH01_onEvent();  // To be called before ETH.begin()
+    WT32_ETH01_onEvent(); // To be called before ETH.begin()
     ETH.begin(ETH_PHY_ADDR, ETH_PHY_POWER);
     ETH.config(myIP, myGW, mySN, myDNS);
     WT32_ETH01_waitForConnect();
@@ -300,31 +355,39 @@ void setup() {
     Serial.print(F("Ethernet IP: "));
     Serial.println(localEthIP);
 
-    ETHserver.on("/", HTTP_GET, [](AsyncWebServerRequest* request) { handleEthRoot(request); });
-    ETHserver.on("/api", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, handlePostBody);
-    ETHserver.onNotFound([](AsyncWebServerRequest* request) { handleEthnotFound(request); });
+    ETHserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+                 { handleEthRoot(request); });
+    ETHserver.on("/api", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, handlePostBody);
+    ETHserver.onNotFound([](AsyncWebServerRequest *request)
+                         { handleEthnotFound(request); });
     ETHserver.begin();
 
     // sett_begin(); //wifi морда Settings Alex Gyver
     // Serial.print("\n\t\t\t INIT \n\t wifi ssid: ");
     // Serial.println(db[kk::wifi_ssid]);  // из settings.h доступны db и ключи
 
-}  // setup()
+} // setup()
 
-void loop() {
+void loop()
+{
     // sett_loop();  // wifi морда Settings Alex Gyver. не работает с ETH
-    parse_serial();  // отладка
+    parse_serial(); // отладка
 
-    if (scanDMcode()) {  // если отсканирован код
+    if (scanDMcode())
+    { // если отсканирован код
         // Serial.println("отсканированный DM: " + String(dm_number));
-        byte customer_count = valid_customer();  // если
-        if (customer_count) {
-            if (customer_count == 1) {  // проходит первый раз
+        byte customer_count = valid_customer(); // если
+        if (customer_count)
+        {
+            if (customer_count == 1)
+            { // проходит первый раз
                 Serial.println("1-й вхоД ");
                 digitalWrite(ENTER_PIN, ON);
                 delay(FIRST_ENTER_DELAY);
                 digitalWrite(ENTER_PIN, OFF);
-            } else if (customer_count == 2) {
+            }
+            else if (customer_count == 2)
+            {
                 Serial.println("\t1-й ВЫход ");
 #ifdef EXIT_PIN
                 digitalWrite(EXIT_PIN, ON);
@@ -335,12 +398,16 @@ void loop() {
                 delay(FIRST_EXIT_DELAY);
                 digitalWrite(ENTER_PIN, OFF);
 #endif
-            } else if (customer_count % 2 == 1) {
+            }
+            else if (customer_count % 2 == 1)
+            {
                 Serial.println("\t\tснова вхоДит ");
                 digitalWrite(ENTER_PIN, ON);
                 delay(MULTIPLE_OPEN_DELAY);
                 digitalWrite(ENTER_PIN, OFF);
-            } else if (customer_count % 2 == 0) {
+            }
+            else if (customer_count % 2 == 0)
+            {
                 Serial.println("\t\t\tснова ВЫходит ");
 #ifdef EXIT_PIN
                 digitalWrite(EXIT_PIN, ON);
@@ -352,13 +419,18 @@ void loop() {
                 digitalWrite(ENTER_PIN, OFF);
 #endif
             }
-        } else {
+        }
+        else
+        {
             Serial.print("НЕ валидный посетитель");
         }
         // очистим возможные повторные данные от сканера
-        while (Serial1.available()) {
+        while (Serial1.available())
+        {
             Serial1.read();
         }
-    }  // scanDMcode()
+    } // scanDMcode()
 
-}  // loop
+} // loop
+
+
