@@ -19,7 +19,11 @@ extern SettingsGyverWS sett;
 
 extern Datime curDataTime;
 extern LED indikator; // если так можно
-
+extern String dm_string; // что просканировал сканер, выведем в лог
+extern bool newScan; // флаг о том что можно вывести в лог данные нового скана 
+extern bool newPass; // флаг о том что можно вывести в лог данные новой отправки 
+extern String srvResponse; // ответ от сервера на отправку данных сканера
+extern int httpCode;
 void sett_begin();
 void sett_loop();
 

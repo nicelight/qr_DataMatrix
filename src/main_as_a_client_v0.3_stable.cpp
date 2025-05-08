@@ -1,16 +1,17 @@
 #include <Arduino.h>
-#include <ETH.h>
 #include <ArduinoJson.h>
+#include <ETH.h>
+
 #include "led.h"
-#include "timer.h"
 #include "sets.h"
+#include "timer.h"
 // #include "nastroyki.h"
 // const char *serverUrl = "http://192.168.10.250/api/callback";
 
-#include <Wire.h>
 #include <VL53L0X.h>
+#include <Wire.h>
 
-VL53L0X vl53l03_dalnomer; // для фиксации прохода через турникет
+VL53L0X vl53l03_dalnomer;  // для фиксации прохода через турникет
 bool dalnomer_enabled = false;
 
 // источник кода ethernet клиента
@@ -21,8 +22,8 @@ bool dalnomer_enabled = false;
 #define _ASYNC_HTTP_LOGLEVEL_ 1
 #define _ETHERNET_WEBSERVER_LOGLEVEL_ 1
 
-#include <WebServer_WT32_ETH01.h> // https://github.com/khoih-prog/WebServer_WT32_ETH01
 #include <HTTPClient.h>
+#include <WebServer_WT32_ETH01.h>  // https://github.com/khoih-prog/WebServer_WT32_ETH01
 
 // #define ASYNC_HTTP_REQUEST_GENERIC_VERSION_MIN_TARGET "AsyncHTTPRequest_Generic v1.10.2"
 // #define ASYNC_HTTP_REQUEST_GENERIC_VERSION_MIN 1010002
@@ -43,32 +44,26 @@ IPAddress myDNS(8, 8, 8, 8);
 
 // const char POST_ServerAddress[] = "192.168.10.50"; // в файле nastroyki.h
 String apiPath = "/api/callback";
+// String dm_string = "";
 
-String dm_string = "";
 long dm_number = 1000000000;
 
-String scanDMcode()
-{
-    if (Serial1.available() > 0)
-    {
+String scanDMcode() {
+    if (Serial1.available() > 0) {
+        newScan = true;
         dm_string = "";
         uint32_t startTime = millis();
-        while (millis() - startTime < 100ul)
-        {
-            while (Serial1.available() > 0)
-            {
+        while (millis() - startTime < 100ul) {
+            while (Serial1.available() > 0) {
                 char c = Serial1.read();
                 dm_string += c;
                 startTime = millis();
             }
         }
-        if (dm_string.length() >= 32)
-        {
+        if (dm_string.length() >= 32) {
             String sub_str = dm_string.substring(23, 32);
-            for (int i = 0; i < sub_str.length(); i++)
-            {
-                if (!isDigit(sub_str.charAt(i)))
-                {
+            for (int i = 0; i < sub_str.length(); i++) {
+                if (!isDigit(sub_str.charAt(i))) {
                     Serial.println("[scanDMcode] Не все символы цифры!");
                     Serial.print("[scanDMcode] dm_string: ");
                     Serial.println(dm_string);
@@ -91,10 +86,8 @@ String scanDMcode()
     return "";
 }
 
-void blinkLed(int times, int duration)
-{
-    for (int i = 0; i < times; i++)
-    {
+void blinkLed(int times, int duration) {
+    for (int i = 0; i < times; i++) {
         // digitalWrite(INDIKATOR, HIGH);
         // delay(duration);
         // digitalWrite(INDIKATOR, LOW);
@@ -102,8 +95,10 @@ void blinkLed(int times, int duration)
     }
 }
 
-int passDMCode(const String &code_str)
-{
+int passDMCode(const String &code_str) {
+    if(code_str == SERVICE_QR){
+        return 20;
+    }
     // если не подключен Ethernet выйдем
     if (!WT32_ETH01_isConnected())
         return -1;
@@ -120,39 +115,39 @@ int passDMCode(const String &code_str)
     const char *serverUrl = SERVERURL;
     HTTPClient http;
     http.begin(serverUrl);
-    http.addHeader("Content-Type", "application/json"); // Установка заголовков :contentReference[oaicite:4]{index=4}
+    http.addHeader("Content-Type", "application/json");  // Установка заголовков :contentReference[oaicite:4]{index=4}
 
     Serial.print("Connecting to srv ");
     Serial.print(serverUrl);
     Serial.print("\n\tRequest POST:\n");
     Serial.print(jsonStr);
-    // client.print(postData);
-    int httpCode = http.POST(jsonStr); // отправка POST
-    if (httpCode > 0)
-    {
+    // int httpCode = http.POST(jsonStr);
+    httpCode = 0; // стираем старые данные из глоб переменной
+    httpCode = http.POST(jsonStr);  // отправка POST
+    if (httpCode > 0) {
         // Serial.printf("\nSRV code: %d\n", httpCode);
-        String response = http.getString();
+        // String response = http.getString();
+        srvResponse = http.getString();
         Serial.print(" \n\t||\n\t||\n\tAnswer:\n");
-        Serial.println(response);
-        http.end(); // Освобождение ресурсов
+        Serial.println(srvResponse);
+        newPass = true;
+        http.end();  // Освобождение ресурсов
+        // пропуск по сервисному коду
         return httpCode;
-    }
-    else
-    {
+    } else {
         Serial.printf("\n\n\t POST failed, error: %s\n", http.errorToString(httpCode).c_str());
-        http.end(); // Освобождение ресурсов
+        srvResponse = "None";
+        newPass = true;
+        http.end();  // Освобождение ресурсов
         return -2;
     }
 
-} // passDMCode
+}  // passDMCode
 
-void parse_serial()
-{
-    if (Serial.available() > 0)
-    {
+void parse_serial() {
+    if (Serial.available() > 0) {
         char receivedChar = Serial.read();
-        if (receivedChar == 'd')
-        {
+        if (receivedChar == 'd') {
             Serial.print("аптайм: ");
             Serial.println(millis() >> 10);
             // for (int i = 0; i < currentIndex; i++) {
@@ -160,19 +155,16 @@ void parse_serial()
             //     Serial.print(":\t\t");
             //     Serial.println(database[i]);
             // }
-        }
-        else if (receivedChar == 'i')
-        {
+        } else if (receivedChar == 'i') {
             Serial.print("аптайм: ");
             Serial.println(millis() >> 10);
             // Serial.print("текущий индекс:");
             // Serial.println(currentIndex);
         }
     }
-} // parse_serial()
+}  // parse_serial()
 
-void setup()
-{
+void setup() {
     Serial.begin(115200);
     Serial1.begin(9600, SERIAL_8N1, RX_SCANER, TX_SCANER);
 
@@ -183,28 +175,28 @@ void setup()
     digitalWrite(EXIT_PIN, OFF);
     // pinMode(INDIKATOR, OUTPUT);
     // digitalWrite(INDIKATOR, LOW);
-    Wire.begin(17, 5);
-    //   vl53l03_dalnomer.setTimeout(500);
-    vl53l03_dalnomer.setTimeout(500);
-    // reduce timing budget to 20 ms (default is about 33 ms)
-    vl53l03_dalnomer.setMeasurementTimingBudget(20000);
-    dalnomer_enabled = vl53l03_dalnomer.init();
-    if (!dalnomer_enabled)
-        Serial.println("Init dalnomer failed!");
-
-    while (!Serial && millis() < 2000)
-        ;
+    if (LASER_DALNOMER) {
+        Wire.begin(17, 5);
+        //   vl53l03_dalnomer.setTimeout(500);
+        vl53l03_dalnomer.setTimeout(500);
+        // reduce timing budget to 20 ms (default is about 33 ms)
+        vl53l03_dalnomer.setMeasurementTimingBudget(20000);
+        dalnomer_enabled = vl53l03_dalnomer.init();
+        if (!dalnomer_enabled)
+            Serial.println("Init dalnomer failed!");
+    }
+    while (!Serial && millis() < 2000);
     Serial.setDebugOutput(true);
-    WT32_ETH01_onEvent(); // To be called before ETH.begin()
+    WT32_ETH01_onEvent();  // To be called before ETH.begin()
     ETH.begin(ETH_PHY_ADDR, ETH_PHY_POWER);
     ETH.config(myIP, myGW, mySN, myDNS);
     WT32_ETH01_waitForConnect();
-    Serial.print(F("\nHTTP WebClient is @ IP : "));
+    Serial.print("\nHTTP WebClient is @ IP : ");
     Serial.println(ETH.localIP());
-} // setup
+    sett_begin();
+}  // setup
 
-enum steps
-{
+enum steps {
     INIT,
     SCAN_QR,
     WRONG_QR,
@@ -220,103 +212,103 @@ uint32_t procMs = 0;
 String code_str = "";
 int dist = 1000;
 
-void loop()
-{
-
-    switch (proc)
-    {
-    case INIT:
-        procMs = millis();
-        while (Serial1.available())
-            Serial1.read();
-        proc = SCAN_QR;
-        Serial.println("SCAN QR");
-        break;
-    case SCAN_QR: // сканируем qr код
-        parse_serial();
-        code_str = scanDMcode();
-        if (code_str.length() > 0)
-        {
-            int result = passDMCode(code_str);
-            Serial.print("Srv resp: ");
-            Serial.println(result);
-            switch (result)
-            {
-            case -1:        // нет связи ETHERNET
-                delay(500); // заглушка TODO
-                break;
-            case -2:        // не удалось подключиться к серверу
-                delay(500); // заглушка TODO
-                break;
-
-            case 200:
-                proc = OPEN_DOOR;
-                break;
-            case 400:
-                proc = WRONG_QR;
-                break;
-            } // switch result
+void loop() {
+    sett_loop();
+    switch (proc) {
+        case INIT:
+            procMs = millis();
             while (Serial1.available())
                 Serial1.read();
-        } // scan exist
-        break;
-    case WRONG_QR:
-        Serial.println("REJECTED QR");
-        proc = INIT;
-        break;
-    case OPEN_DOOR:
-        Serial.println("OPENING DOOR");
-        digitalWrite(ENTER_PIN, ON);
-        procMs = millis();
-        proc = WAIT_FOR_OPENING;
-        break;
-    case WAIT_FOR_OPENING:
-        if (millis() - procMs > 1000ul) // заглушка TODO
-        {
-            Serial.print("WAITING FOR ENTERING..");
-            proc = WAIT_FOR_ENTERING;
-        }
-        break;
-    case WAIT_FOR_ENTERING:
-        if (millis() - procMs > 7000ul)
-        {
-            Serial.println("..TIMEOUT");
-            procMs = millis();
-            Serial.println("AFTERENTER_DELAY");
-            proc = AFTERENTER_DELAY;
-        } // if ms
-        // проверяеем дальномером если тело прошло
-        dist = vl53l03_dalnomer.readRangeSingleMillimeters();
-        // Serial.print("DISTANCE: ");
-        // Serial.println(dist);
-        if (dist < 500)
-        {
-            Serial.print("..DISTANCE ");
-            Serial.println(dist);
-            procMs = millis();
-            Serial.println("AFTERENTER_DELAY");
-            proc = AFTERENTER_DELAY;
-        } // if ms
-        break;
-    case AFTERENTER_DELAY:
-        if (millis() - procMs > 2000ul)
-        {
-            proc = CLOSING_DOOR;
-        }
-        break;
-    case CLOSING_DOOR:
-        Serial.println("CLOSING DOOR");
-        digitalWrite(ENTER_PIN, OFF);
-        procMs = millis();
-        proc = WAIT_FOR_CLOSING;
-        break;
-    case WAIT_FOR_CLOSING:
-        if (millis() - procMs > 1000ul)
-        {
+            proc = SCAN_QR;
+            Serial.println("SCAN QR");
+            break;
+        case SCAN_QR:  // сканируем qr код
+            parse_serial();
+            code_str = scanDMcode();
+            if (code_str.length() > 0) {
+                int result = passDMCode(code_str);
+                Serial.print("Srv resp: ");
+                Serial.println(result);
+                switch (result) {
+                    case -1:         // нет связи ETHERNET
+                        delay(500);  // заглушка TODO
+                        break;
+                    case -2:         // не удалось подключиться к серверу
+                        delay(500);  // заглушка TODO
+                        break;
+                        case 20:
+                        proc = OPEN_DOOR;
+                        break;
+                    case 200:
+                        proc = OPEN_DOOR;
+                        break;
+                    case 400:
+                        proc = WRONG_QR;
+                        break;
+                }  // switch result
+                while (Serial1.available())
+                    Serial1.read();
+            }  // scan exist
+            break;
+        case WRONG_QR:
+            Serial.println("REJECTED QR");
             proc = INIT;
-        }
-        break;
-    } // switch proc
+            break;
+        case OPEN_DOOR:
+            Serial.println("OPENING DOOR");
+            digitalWrite(ENTER_PIN, ON);
+            procMs = millis();
+            proc = WAIT_FOR_OPENING;
+            break;
+        case WAIT_FOR_OPENING:
+            // if (millis() - procMs > 1000ul)  // заглушка TODO
+            if (millis() - procMs > OPEN_DELAY)  // заглушка TODO
+            {
+                procMs = millis();
+                Serial.print("WAITING FOR ENTERING..");
+                if (LASER_DALNOMER) {
+                    proc = WAIT_FOR_ENTERING;
+                } else {
+                    proc = AFTERENTER_DELAY;
+                }
+            }  // if ms
+            break;
+        case WAIT_FOR_ENTERING:
+            if (millis() - procMs > 7000ul) {
+                Serial.println("..TIMEOUT");
+                procMs = millis();
+                Serial.println("AFTERENTER_DELAY");
+                proc = AFTERENTER_DELAY;
+            }  // if ms
+            // проверяеем дальномером если тело прошло
+            dist = vl53l03_dalnomer.readRangeSingleMillimeters();
+            // Serial.print("DISTANCE: ");
+            // Serial.println(dist);
+            if (dist < 500) {
+                Serial.print("..DISTANCE ");
+                Serial.println(dist);
+                procMs = millis();
+                Serial.println("AFTERENTER_DELAY");
+                proc = AFTERENTER_DELAY;
+            }  // if ms
+            break;
+        case AFTERENTER_DELAY:
+            if (millis() - procMs > 2000ul) {
+                proc = CLOSING_DOOR;
+            }
+            break;
+        case CLOSING_DOOR:
+            Serial.println("CLOSING DOOR");
+            digitalWrite(ENTER_PIN, OFF);
+            procMs = millis();
+            proc = WAIT_FOR_CLOSING;
+            break;
+        case WAIT_FOR_CLOSING:
+            if (millis() - procMs > 1000ul) {
+                proc = INIT;
+            }
+            break;
+    }  // switch proc
 
     // // тесты
     // if (!digitalRead(39))
@@ -351,4 +343,4 @@ void loop()
     //     Serial.print(" TIMEOUT");
     // }
 
-} // loop
+}  // loop
