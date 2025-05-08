@@ -1,15 +1,15 @@
 // статический айпишник ETH в сети
 #define IP_OCT1 192
 #define IP_OCT2 168
-// #define IP_OCT3 10
-#define IP_OCT3 50
-#define IP_OCT4 231
+#define IP_OCT3 10
+// #define IP_OCT3 50
+#define IP_OCT4 232
 #define IP_GATE 1
 
 // IP адрес целевого сервера (пример)
 // тестовый дома
-// #define SERVERURL "http://192.168.10.250/api/callback"
-#define SERVERURL "http://192.168.50.210/api/callback"
+#define SERVERURL "http://192.168.10.250/api/callback"
+// #define SERVERURL "http://192.168.50.201/api/callback"
 // #define SERVER_OCT1 192
 // #define SERVER_OCT2 168
 // // #define SERVER_OCT3 50
@@ -28,12 +28,12 @@
 #define OFF 1 //
 
 #define RX_SCANER 14 // RX1
-#define TX_SCANER 12 // TX1
+#define TX_SCANER 12 // TX1 не нужно
 
 
 // дальномер на I2C шине 
 // SDA белый 17 (TXD на плате) 
-// SCL синий 16 (RXD на плате)
+// SCL синий 5 (RXD на плате)
 
 
 
