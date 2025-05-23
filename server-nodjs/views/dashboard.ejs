@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Управления турникетами</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <h1><a href="/admin">Главная</a></h1>
+      <div class="user-info">
+        <% if(user.role === 'admin') { %>
+           <a href="/update">Обновление</a> |
+		   <a href="/admin/equipment">Список оборудования</a> | 
+        <% } %>
+        Пользователь: <%= user.username %> | <a href="/logout">Выйти</a>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section class="stats">
+      <div class="stats-cards">
+        <div class="card">
+          <h3>Вход</h3>
+          <p>
+            <a href="/admin/passlog?type=activeEntrance">
+              <%= activeEntranceCount %>
+            </a>
+          </p>
+        </div>
+        <div class="card">
+          <h3>Выход</h3>
+          <p>
+            <a href="/admin/passlog?type=activeExit">
+              <%= activeExitCount %>
+            </a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+	<section class="chart-section">
+	  <h2>Использование аттракционов</h2>
+	  <div class="chart-container">
+		<canvas id="attractionChart"></canvas>
+	  </div>
+	</section>
+
+    <section class="manual-send">
+      <h2>Ручная отправка запроса на турникеты</h2>
+      <form id="manualPostForm">
+        <div id="passInputs">
+          <div class="form-group pass-input">
+            <label>ID Пропуска</label>
+            <input type="text" name="passIds[]" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+		  <button type="button" class="btn" id="addFieldBtn">+ Добавить поле</button> 
+          <button type="button" class="btn" onclick="sendRequest('Вход')">Отправить на Вход</button>
+          <button type="button" class="btn" onclick="sendRequest('Выход')">Отправить на Выход</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="/js/main.js"></script>
+	<script>
+	  window.onload = function() {
+		// Получаем данные, переданные из контроллера (убедитесь, что attractionData не пустой)
+		const xLabels = <%- JSON.stringify(attractionData.map(item => item.equipmentName)) %>;
+		const dataCounts = <%- JSON.stringify(attractionData.map(item => item.count)) %>;
+		
+		console.log("xLabels:", xLabels);
+		console.log("dataCounts:", dataCounts);
+		
+		const ctx = document.getElementById('attractionChart').getContext('2d');
+		new Chart(ctx, {
+		  type: 'bar',
+		  data: {
+			labels: xLabels,
+			datasets: [{
+			  label: 'Количество посещений',
+			  data: dataCounts,
+			  backgroundColor: 'rgba(75, 192, 192, 0.2)',
+			  borderColor: 'rgba(75, 192, 192, 1)',
+			  borderWidth: 1
+			}]
+		  },
+		  options: {
+			responsive: true,
+			maintainAspectRatio: false,
+			scales: {
+			  y: { beginAtZero: true }
+			}
+		  }
+		});
+	  };
+	</script>
+
+</body>
+</html>
