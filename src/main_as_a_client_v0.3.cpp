@@ -1,3 +1,7 @@
+// отладка бэктрейсов 
+// ~/.platformio/packages/toolchain-xtensa-esp32/bin/xtensa-esp32-elf-addr2line -pfiaC -e "C:\Users\Acer\Documents\PlatformIO\Projects\qr_DataMatrix\.pio\build\v02-client\firmware.elf" 0x400dcbf1:0x3ffb21f0 0x400dcc3a:0x3ffb2210 0x400d3156:0x3ffb2230 0x400e2f7e:0x3ffb2290
+
+
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <ETH.h>
@@ -8,10 +12,17 @@
 // #include "nastroyki.h"
 // const char *serverUrl = "http://192.168.10.250/api/callback";
 
+#ifdef VL53L0X
 #include <VL53L0X.h>
+VL53L0X dalnomer;  // для фиксации прохода через турникет
+#endif
+#ifdef VL53LXX_V2
+#include <VL53L1X.h>
+VL53L1X dalnomer;  // для фиксации прохода через турникет
+#endif
+
 #include <Wire.h>
 
-VL53L0X vl53l03_dalnomer;  // для фиксации прохода через турникет
 bool dalnomer_enabled = false;
 
 // источник кода ethernet клиента
@@ -175,15 +186,22 @@ void setup() {
     digitalWrite(EXIT_PIN, OFF);
     // pinMode(INDIKATOR, OUTPUT);
     // digitalWrite(INDIKATOR, LOW);
+
+    // #ifdef(VL53L0X)
+
     if (LASER_DALNOMER) {
         Wire.begin(17, 5);
-        //   vl53l03_dalnomer.setTimeout(500);
-        vl53l03_dalnomer.setTimeout(500);
+#ifdef VL53LXX_V2
+        Wire.setClock(400000);  // use 400 kHz I2C
+#endif
+        dalnomer.setTimeout(500);
         // reduce timing budget to 20 ms (default is about 33 ms)
-        vl53l03_dalnomer.setMeasurementTimingBudget(20000);
-        dalnomer_enabled = vl53l03_dalnomer.init();
-        if (!dalnomer_enabled)
-            Serial.println("Init dalnomer failed!");
+        dalnomer_enabled = dalnomer.init();
+        if (!dalnomer_enabled) Serial.println("Init dalnomer failed!");
+        else dalnomer.setMeasurementTimingBudget(20000);
+#ifdef VL53LXX_V2
+        dalnomer.startContinuous(50);
+#endif
     }
     while (!Serial && millis() < 2000);
     Serial.setDebugOutput(true);
@@ -193,7 +211,7 @@ void setup() {
     WT32_ETH01_waitForConnect();
     Serial.print("\nHTTP WebClient is @ IP : ");
     Serial.println(ETH.localIP());
-    sett_begin();
+    // sett_begin();
 }  // setup
 
 enum steps {
@@ -213,7 +231,7 @@ String code_str = "";
 int dist = 1000;
 
 void loop() {
-    sett_loop();
+    // sett_loop();
     switch (proc) {
         case INIT:
             procMs = millis();
@@ -260,31 +278,53 @@ void loop() {
             procMs = millis();
             proc = WAIT_FOR_OPENING;
             break;
+            // старая глючновая реализация, тупит на вход
+        // case WAIT_FOR_OPENING:
+        //     if (millis() - procMs > OPENINIG_DELAY)  // заглушка TODO
+        //     {
+        //         procMs = millis();
+        //         Serial.print("WAITING FOR ENTERING..");
+        //         if (LASER_DALNOMER) {
+        //             proc = WAIT_FOR_ENTERING;
+        //         } else {
+        //             proc = AFTERENTER_DELAY;
+        //         }
+        //     }  // if ms
+        //     break;
         case WAIT_FOR_OPENING:
-            // if (millis() - procMs > 1000ul)  // заглушка TODO
-            if (millis() - procMs > OPEN_DELAY)  // заглушка TODO
-            {
-                procMs = millis();
-                Serial.print("WAITING FOR ENTERING..");
-                if (LASER_DALNOMER) {
+
+            if (LASER_DALNOMER) {
+                if (millis() - procMs > 500ul) {
+                    procMs = millis();
+                    Serial.print("WAITING FOR ENTERING..");
                     proc = WAIT_FOR_ENTERING;
-                } else {
+                }  // if ms
+            } else {  // дальномера нет, тупо ждем
+                if (millis() - procMs > OPENINIG_DELAY) {
+                    procMs = millis();
                     proc = AFTERENTER_DELAY;
                 }
-            }  // if ms
+            }
+
             break;
         case WAIT_FOR_ENTERING:
-            if (millis() - procMs > 7000ul) {
+            if (millis() - procMs > 10000ul) {
                 Serial.println("..TIMEOUT");
                 procMs = millis();
                 Serial.println("AFTERENTER_DELAY");
                 proc = AFTERENTER_DELAY;
             }  // if ms
-            // проверяеем дальномером если тело прошло
-            dist = vl53l03_dalnomer.readRangeSingleMillimeters();
-            // Serial.print("DISTANCE: ");
-            // Serial.println(dist);
-            if (dist < 500) {
+// проверяеем дальномером если тело прошло
+#ifdef VL53L0X
+            dist = dalnomer.readRangeSingleMillimeters();
+#endif
+#ifdef VL53LXX_V2
+            dist = dalnomer.read();
+#endif
+
+            Serial.print("DISTANCE: ");
+            Serial.println(dist);
+            if ((dist > 20) && (dist < 500)) {
                 Serial.print("..DISTANCE ");
                 Serial.println(dist);
                 procMs = millis();
@@ -326,8 +366,8 @@ void loop() {
     //         for (int i = 0; i < 100; i++)
     //         {
     //             Serial.print("дальномер: ");
-    //             Serial.println(vl53l03_dalnomer.readRangeSingleMillimeters());
-    //             if (vl53l03_dalnomer.timeoutOccurred())
+    //             Serial.println(dalnomer.readRangeSingleMillimeters());
+    //             if (dalnomer.timeoutOccurred())
     //             {
     //                 Serial.print(" TIMEOUT");
     //             }
@@ -337,8 +377,8 @@ void loop() {
     // } // test
 
     // тестируем работу дальномера
-    // Serial.println(vl53l03_dalnomer.readRangeSingleMillimeters());
-    // if (vl53l03_dalnomer.timeoutOccurred())
+    // Serial.println(dalnomer.readRangeSingleMillimeters());
+    // if (dalnomer.timeoutOccurred())
     // {
     //     Serial.print(" TIMEOUT");
     // }

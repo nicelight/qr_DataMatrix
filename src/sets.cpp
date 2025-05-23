@@ -20,9 +20,9 @@ Datime curDataTime(NTP);  // NTP это объект
 String dm_string = "";
 bool newScan = false;
 // для отправки на сервер qr кодов
-String srvResponse = ""; // ответ от сервера на отправку данных по ethernet сканера 
-int httpCode = 0;  // код ответа от сервера на отправку данных сканера  
-bool newPass = false;  // флаг о том что можно вывести в логгер данные нового скана
+String srvResponse = "";  // ответ от сервера на отправку данных по ethernet сканера
+int httpCode = 0;         // код ответа от сервера на отправку данных сканера
+bool newPass = false;     // флаг о том что можно вывести в логгер данные нового скана
 
 static const char *const WEEKdays[] = {
     "вчера",
@@ -51,7 +51,15 @@ static void build(sets::Builder &b) {
 
         logger.print("Set: 0x");
         logger.println(b.build.id, HEX);
+        // logger.print("proc ") ;
+        // logger.println(proc) ;
+        // logger.print("dist ");
+        // logger.println(dist);
     }
+    // if (dist < 500) {
+    //     logger.print("dist: ");
+    //     logger.println(dist);
+    // }
     // логирование скана qr кода
     if (newScan) {
         logger.print("dm_string: ");
@@ -183,9 +191,9 @@ void sett_begin() {
     db.init(kk::ntp_gmt, 5);
 
     // wifi
-    WiFiConnector.setName(AP_SSID); // имя точки доступа
-    WiFiConnector.setPass(AP_PASS); // 30 сек таймаут на подключение к wifi
-    WiFiConnector.setTimeout(180); // 30 сек таймаут на подключение к wifi
+    WiFiConnector.setName(AP_SSID);  // имя точки доступа
+    WiFiConnector.setPass(AP_PASS);  // 30 сек таймаут на подключение к wifi
+    WiFiConnector.setTimeout(180);   // 30 сек таймаут на подключение к wifi
     WiFiConnector.onConnect([]() {
         Serial.print("Connected: ");
         Serial.println(WiFi.localIP());

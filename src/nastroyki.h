@@ -1,25 +1,33 @@
 // статический айпишник ETH в сети
 #define IP_OCT1 192
 #define IP_OCT2 168
-#define IP_OCT3 10
+#define IP_OCT3 11
 // #define IP_OCT3 50
 #define IP_OCT4 232
 #define IP_GATE 1
 
 // IP адрес целевого сервера (пример)
-#define SERVERURL "http://192.168.10.253/api/callback" // тестовый дом
+#define SERVERURL "http://192.168.11.200/api/callback" // тестовый дом
 // #define SERVERURL "http://192.168.50.201/api/callback" // прод 
 
 // дальномер на I2C шине 
-#define LASER_DALNOMER 0    // 1 - включен, 0 - выключен
+#define LASER_DALNOMER 1    // 1 - включен, 0 - выключен
+// выбрать один из двух DALNOMER_TYPE :
+// #define   VL53L0X // этот заказан первым, стоит на первом тестовом турникете
+#define VL53LXX_V2 // эти были заказаны позже 
 // SDA белый 17 (TXD на плате) 
-// SCL синий 5 (RXD на плате)
+// SCL синий 5 (RXD на плате)r
 
+// Kompas 231(ENTER) 
+#define ENTER_PIN 2
+#define EXIT_PIN 4
 
-#define ENTER_PIN 4
-#define EXIT_PIN 2
+// // Kompas 232(EXIT), 233(EXIT)
+// #define ENTER_PIN 4
+// #define EXIT_PIN 2
 
-#define OPEN_DELAY 4000ul
+#define OPENINIG_DELAY 4000ul // задержка если датчика нет
+
 
 #define ON 0  // включение ворот логическим нулем или единицей
 #define OFF 1 //
