@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Редактировать оборудование</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <h1><a href="/admin">Главная</a></h1><h2>Редактировать оборудование</h2>
+      <div class="user-info">
+        Пользователь: <%= user.username %> | <a href="/logout">Выйти</a>
+      </div>
+    </div>
+  </header>
+  <main>
+    <form action="/admin/equipment/edit/<%= equipment._id %>" method="POST">
+      <div class="form-group">
+        <label for="name">Название</label>
+        <input type="text" name="name" id="name" value="<%= equipment.name %>" required>
+      </div>
+      <div class="form-group">
+        <label for="ip">IP адрес</label>
+        <input type="text" name="ip" id="ip" value="<%= equipment.ip %>" required>
+      </div>
+      <div class="form-group">
+        <label for="type">Тип</label>
+        <select name="type" id="type" required>
+          <option value="Вход" <%= equipment.type === "Вход" ? "selected" : "" %>>Вход</option>
+          <option value="Выход" <%= equipment.type === "Выход" ? "selected" : "" %>>Выход</option>
+          <option value="аттракцион" <%= equipment.type === "аттракцион" ? "selected" : "" %>>аттракцион</option>
+        </select>
+      </div>
+      <button type="submit" class="btn">Сохранить изменения</button>
+      <a href="/admin/equipment" class="btn">Отмена</a>
+    </form>
+  </main>
+</body>
+</html>

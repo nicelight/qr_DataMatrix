@@ -5,52 +5,58 @@
   indikator.blink(); // in loop
 */
 
-
-
 // мигание с временем периода и временем отработки
 #pragma once
 #include <Arduino.h>
+#include "PCF8575.h"
+
+extern PCF8575 PCF1;
+
 #include "timer.h"
 class LED {
-  public:
-    LED (byte pin, int all, byte cnt, int period, int duratn) : _pin(pin) {
-      pinMode(_pin, OUTPUT);
-      tmrAll.setPeriod(all);
-      tmr = millis();
-      prdBlink = period;
-      prdOn = period - duratn;
-      counter = cnt;
-      tmrAll.force();
+   public:
+    LED(byte pin, int all, byte cnt, int period, int duratn) : _pin(pin) {
+        // pinMode(_pin, OUTPUT);  // заменить
+        PCF1.pinMode(P1, OUTPUT);
+        tmrAll.setPeriod(all);
+        tmr = millis();
+        prdBlink = period;
+        prdOn = period - duratn;
+        counter = cnt;
+        tmrAll.force();
     }
 
     void setPeriod(uint16_t al, byte cn, uint16_t prd, uint16_t dur) {
-      tmrAll.setPeriod(al);
-      tmr = millis();
-      prdBlink = prd;
-      prdOn = prd - dur;
-      counter = cn;
-      tmrAll.force();
+        tmrAll.setPeriod(al);
+        tmr = millis();
+        prdBlink = prd;
+        prdOn = prd - dur;
+        counter = cn;
+        tmrAll.force();
     }
     void tick() {
-      if (tmrAll.ready()) { // по прохождению периода взводим мигалку на режим работы
-        counterCur = counter;
-        digitalWrite(_pin, 0);
-        tmr = millis();
-      }
-      // пока еще работаем
-      if (counterCur) {
-        //ждем  сработку таймера и тушим
-        if (millis() - tmr >= prdOn) {
-          digitalWrite(_pin, 1);
+        if (tmrAll.ready()) {  // по прохождению периода взводим мигалку на режим работы
+            counterCur = counter;
+            // digitalWrite(_pin, 0); // заменить
+            PCF1.digitalWrite(P1, 0);
+            tmr = millis();
         }
-        if (millis() - tmr >= prdBlink) {
-          tmr = millis();
-          digitalWrite(_pin, 0);
-          counterCur--;
-        }
-      }// counter
-    }//tick
-  private:
+        // пока еще работаем
+        if (counterCur) {
+            // ждем  сработку таймера и тушим
+            if (millis() - tmr >= prdOn) {
+                // digitalWrite(_pin, 1); // заменить
+                PCF1.digitalWrite(P1, 1);
+            }
+            if (millis() - tmr >= prdBlink) {
+                tmr = millis();
+                // digitalWrite(_pin, 0); // заменить
+                PCF1.digitalWrite(P1, 0);
+                counterCur--;
+            }
+        }  // counter
+    }  // tick
+   private:
     const byte _pin;
     uint32_t tmr = 0;
     uint32_t prdBlink = 0;
@@ -62,9 +68,6 @@ class LED {
     Timer tmrDur;
 };
 
-
-
-
 /*
   пример использования
   LED led1(LED1_PIN, 500, 100); //раз в 500 милисек загорается на 100 милисек
@@ -74,43 +77,42 @@ class LED {
 */
 
 //// мигание с временем периода и временем отработки
-//#pragma once
-//#include <Arduino.h>
-//#include "timer.h"
-//class LED {
-//  public:
-//    LED (byte pin, int period, int duratn) : _pin(pin) {
-//      pinMode(_pin, OUTPUT);
-//      tmrPer.setPeriod(period);
-//      tmrDur.setPeriod(duratn);
-//    }
+// #pragma once
+// #include <Arduino.h>
+// #include "timer.h"
+// class LED {
+//   public:
+//     LED (byte pin, int period, int duratn) : _pin(pin) {
+//       pinMode(_pin, OUTPUT);
+//       tmrPer.setPeriod(period);
+//       tmrDur.setPeriod(duratn);
+//     }
 //
-//    void setPeriod(uint16_t prd, uint16_t dur) {
-//      tmrPer.setPeriod(prd);
-//      tmrDur.setPeriod(dur);
-//    }
-//    void tick() {
-//      if (tmrPer.ready()) {
-//        digitalWrite(_pin, 1);
-//        flagOn = 1;
-//      }
-//      if (!flagOn) {  // пока светодиод не горит,
-//        tmrDur.rst(); //таймер возжигания обнуляется
-//      }
-//      else { // если уже загорелся, ждем  сработку таймера и тушим
-//        if (tmrDur.ready()) {
-//          digitalWrite(_pin, 0);
-//          flagOn = 0;
-//        }
-//      }
-//    }//blink
-//  private:
-//    const byte _pin;
-//    bool flag, flagOn = 0;
-//    Timer tmrPer;
-//    Timer tmrDur;
-//};
-
+//     void setPeriod(uint16_t prd, uint16_t dur) {
+//       tmrPer.setPeriod(prd);
+//       tmrDur.setPeriod(dur);
+//     }
+//     void tick() {
+//       if (tmrPer.ready()) {
+//         digitalWrite(_pin, 1);
+//         flagOn = 1;
+//       }
+//       if (!flagOn) {  // пока светодиод не горит,
+//         tmrDur.rst(); //таймер возжигания обнуляется
+//       }
+//       else { // если уже загорелся, ждем  сработку таймера и тушим
+//         if (tmrDur.ready()) {
+//           digitalWrite(_pin, 0);
+//           flagOn = 0;
+//         }
+//       }
+//     }//blink
+//   private:
+//     const byte _pin;
+//     bool flag, flagOn = 0;
+//     Timer tmrPer;
+//     Timer tmrDur;
+// };
 
 /*
   //старый простой вариант реализации

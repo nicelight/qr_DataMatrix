@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Активные пропуска</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <h1><a href="/admin">Главная</a></h1>
+      <h2>Активные пропуска (<%= passType %>)</h2>
+      <div class="user-info">
+        Пользователь: <%= user.username %> | <a href="/logout">Выйти</a>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section>
+      <form id="deletePassForm" action="/admin/passlog/delete" method="POST">
+        <table>
+          <thead>
+            <tr>
+              <th>Выбрать</th>
+              <th>ID Пропуска</th>
+              <th>Статус</th>
+              <th>Дата</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% passLogs.forEach(function(log) { %>
+              <tr>
+                <td>
+                  <input type="checkbox" name="passIds[]" value="<%= log.passId %>">
+                </td>
+                <td><%= log.passId %></td>
+                <td><%= log.status %></td>
+                <td><%= log.timestamp.toLocaleString() %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <div style="margin-top: 10px;">
+          <button type="button" id="selectAllBtn" class="btn">Выбрать все</button>
+          <button type="button" id="deselectAllBtn" class="btn">Отменить все</button>
+          <button type="submit" class="btn">Удалить выбранные</button>
+        </div>
+      </form>
+    </section>
+  </main>
+  <script>
+    document.getElementById('selectAllBtn').addEventListener('click', function() {
+      const checkboxes = document.querySelectorAll('input[name="passIds[]"]');
+      checkboxes.forEach(chk => {
+        chk.checked = true;
+      });
+    });
+    
+    document.getElementById('deselectAllBtn').addEventListener('click', function() {
+      const checkboxes = document.querySelectorAll('input[name="passIds[]"]');
+      checkboxes.forEach(chk => {
+        chk.checked = false;
+      });
+    });
+  </script>
+</body>
+</html>
